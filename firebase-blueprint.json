@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Oyuncu profili ve oyun istatistikleri",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Kullanıcı benzersiz kimliği"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Oyuncunun görünen adı"
+        },
+        "email": {
+          "type": "string",
+          "description": "Kullanıcının e-posta adresi (varsa)"
+        },
+        "isAnonymous": {
+          "type": "boolean",
+          "description": "Misafir giriş durumu"
+        },
+        "highScore": {
+          "type": "number",
+          "description": "Kullanıcının en yüksek skoru"
+        },
+        "levelsUnlocked": {
+          "type": "number",
+          "description": "Açılmış en yüksek seviye numarası (1-5)"
+        },
+        "totalInvasivesCaptured": {
+          "type": "number",
+          "description": "Toplam yakalanan istilacı canlı sayısı"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Hesap oluşturulma zamanı"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Son güncelleme zamanı"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "highScore",
+        "levelsUnlocked",
+        "totalInvasivesCaptured"
+      ]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Genel liderlik tablosu sıralama kaydı",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Kayıt kimliği (genellikle userId)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Oyuncunun kullanıcı kimliği"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Oyuncu takma adı"
+        },
+        "score": {
+          "type": "number",
+          "description": "Toplam elde edilen puan"
+        },
+        "levelReached": {
+          "type": "number",
+          "description": "Ulaşılan seviye"
+        },
+        "capturedTotal": {
+          "type": "number",
+          "description": "Yakalanan toplam canlı sayısı"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Skorun kaydedildiği zaman"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "displayName",
+        "score",
+        "levelReached",
+        "capturedTotal"
+      ]
+    },
+    "GameRecord": {
+      "title": "GameRecord",
+      "description": "Kullanıcının tamamladığı veya oynadığı oyun seviyesi geçmişi",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Oyun oturumu kimliği"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Oturum sahibi oyuncu kimliği"
+        },
+        "levelNumber": {
+          "type": "number",
+          "description": "Oynanan seviye (1-5)"
+        },
+        "score": {
+          "type": "number",
+          "description": "Seviyede elde edilen puan"
+        },
+        "capturedCount": {
+          "type": "number",
+          "description": "Seviyede yakalanan istilacı adedi"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Seviye başarıyla tamamlandı mı?"
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "Seviyenin tamamlanma zamanı"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "levelNumber",
+        "score",
+        "capturedCount",
+        "completed"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Kullanıcı profilleri ve bireysel ilerleme"
+    },
+    "/leaderboard/{entryId}": {
+      "schema": {
+        "$ref": "#/entities/LeaderboardEntry"
+      },
+      "description": "Genel lider tablosu sıralaması"
+    },
+    "/users/{userId}/game_records/{recordId}": {
+      "schema": {
+        "$ref": "#/entities/GameRecord"
+      },
+      "description": "Kullanıcının oyun seviye geçmişi"
+    }
+  }
+}

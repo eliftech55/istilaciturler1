@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Karadeniz'in Koruyucuları – ZETA: İstilacı Tür Avcısı (Tek Dosya Çevrimdışı Sürüm)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #021626;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      height: 52px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 10;
+    }
+    .hud-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(2, 6, 23, 0.7);
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+    }
+    .btn-header {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #gameContainer {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 52px);
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #touchOverlay {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .touch-btn {
+      pointer-events: auto;
+      border-radius: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      transition: transform 0.1s;
+    }
+    .touch-btn:active {
+      transform: scale(0.92);
+    }
+    #joystickZone {
+      pointer-events: auto;
+      width: 120px;
+      height: 120px;
+      border-radius: 60px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 2px solid rgba(56, 189, 248, 0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #joystickKnob {
+      width: 50px;
+      height: 50px;
+      border-radius: 25px;
+      background: radial-gradient(circle, #38bdf8, #0284c7);
+      border: 2px solid white;
+      pointer-events: none;
+      position: absolute;
+    }
+    #btnNet {
+      width: 78px;
+      height: 78px;
+      background: linear-gradient(180deg, #0284c7, #0369a1);
+      border-color: #38bdf8;
+      font-size: 13px;
+    }
+    #btnCollect {
+      width: 66px;
+      height: 66px;
+      background: linear-gradient(180deg, #059669, #047857);
+      border-color: #34d399;
+      font-size: 11px;
+      margin-right: 10px;
+    }
+    .modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 16px;
+    }
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      max-width: 460px;
+      width: 100%;
+      padding: 22px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .primary-btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #0284c7, #0d9488);
+      border: none;
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 14px;
+    }
+    .secondary-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="color: #38bdf8; font-weight: 800;">ZETA: Karadeniz</div>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <div class="hud-badge">⚡ <span id="hudPower" style="color:#38bdf8;">100/200</span></div>
+      <div class="hud-badge">🎯 <span id="hudTarget" style="color:#f59e0b;">0/5</span></div>
+      <div class="hud-badge">🏆 <span id="hudScore" style="color:#34d399;">0</span></div>
+      <button id="btnHowToPlay" class="btn-header">❓ Nasıl Oynanır?</button>
+    </div>
+  </header>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Mobil Dokunmatik Tuşlar -->
+    <div id="touchOverlay">
+      <div id="joystickZone">
+        <div id="joystickKnob"></div>
+      </div>
+      <div style="display: flex; align-items: flex-end;">
+        <button id="btnCollect" class="touch-btn">🌿 YOSUN<br><span style="font-size:8px;">+25⚡</span></button>
+        <button id="btnNet" class="touch-btn">🎯 AĞ AT<br><span id="netTimerText" style="font-size: 9px; opacity: 0.85;">HAZIR</span></button>
+      </div>
+    </div>
+
+    <!-- 1. Seviye Brifingi Modalı -->
+    <div id="briefingModal" class="modal">
+      <div class="modal-box">
+        <div style="font-size: 11px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">1. Seviye Görev Brifingi</div>
+        <h2 style="font-size: 20px; color: white; margin: 4px 0 2px;">Rapana venosa (Deniz Salyangozu)</h2>
+        <div style="font-size: 12px; color: #94a3b8; font-style: italic; margin-bottom: 12px;">Pasifik Kökenli İstilacı Yırtıcı</div>
+
+        <div style="background: rgba(2, 6, 23, 0.7); border: 1px solid #1e293b; border-radius: 12px; padding: 12px; text-align: left; font-size: 11px; line-height: 1.5; margin-bottom: 12px;">
+          <b style="color: #f87171;">⚠️ Karadeniz Ekosistemine Tehdit:</b><br>
+          Gemilerin balast sularıyla gelen bu salyangoz, yerel kara midyeleri ve istiridye yataklarını delerek tüketir.<br><br>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-family: monospace;">
+            <div>🎯 Hedef: <b>5 Adet</b></div>
+            <div>⚡ Eşik: <b>100 Güç</b></div>
+            <div>🔋 Sınır: <b>200 Güç</b></div>
+            <div>💥 Temas: <b>-50 Güç</b></div>
+          </div>
+        </div>
+
+        <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 8px;">
+          💡 <b>Taktik:</b> Deniz tabanındaki yosunları toplayarak enerjini 100'e çıkar. Salyangoza doğrudan dokunma, uzaktan ağ fırlat!
+        </p>
+
+        <button id="btnStartBriefing" class="primary-btn">GÖREVE BAŞLA</button>
+        <button id="btnOpenRulesFromBriefing" class="secondary-btn">Nasıl Oynanır? Kuralları Gör</button>
+      </div>
+    </div>
+
+    <!-- Nasıl Oynanır Modalı -->
+    <div id="rulesModal" class="modal" style="display: none;">
+      <div class="modal-box" style="text-align: left;">
+        <h2 style="font-size: 18px; color: #38bdf8; margin-bottom: 12px; text-align: center;">Oyun Nasıl Oynanır?</h2>
+        
+        <div style="font-size: 11px; line-height: 1.6; color: #cbd5e1; display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: #020617; padding: 8px; border-radius: 8px;">
+            <b style="color: #38bdf8;">1. Hareket:</b> Sol sanal joystick veya klavyede WASD/Yön tuşları.
+          </div>
+          <div style="background: #020617; padding: 8px; border-radius: 8px;">
+            <b style="color: #34d399;">2. Yosun Toplama (+25⚡ / +10 Puan):</b> Denizdeki yosunlara temas edin veya "🌿 YOSUN" butonuna basın. Ağ dolum süresini 3 saniye hızlandırır.
+          </div>
+          <div style="background: #020617; padding: 8px; border-radius: 8px;">
+            <b style="color: #38bdf8;">3. Özel Ağ (+100 Puan):</b> "🎯 AĞ AT" butonu veya Boşluk tuşu. Robot gücü canlı eşiğine eşit/büyükse yakalar. Boşa atış: -10 Puan.
+          </div>
+          <div style="background: #020617; padding: 8px; border-radius: 8px;">
+            <b style="color: #ef4444;">4. Temas Yasaktır (-50⚡):</b> İstilacıya çarpmak enerjinizi hızla tüketir. Enerji 0 olursa oyun biter!
+          </div>
+          <div style="background: #020617; padding: 8px; border-radius: 8px;">
+            <b style="color: #f59e0b;">5. Bonus Tür (+50 Puan):</b> Kırmızı Karadeniz Barbunu'na dokunarak koruyun.
+          </div>
+        </div>
+
+        <button id="btnCloseRules" class="primary-btn">Tamam, Anladım</button>
+      </div>
+    </div>
+
+    <!-- Zafer Modalı -->
+    <div id="winModal" class="modal" style="display: none;">
+      <div class="modal-box">
+        <h2 style="font-size: 22px; color: #34d399; margin-bottom: 8px;">Seviye Tamamlandı! 🎉</h2>
+        <p style="font-size: 13px; margin-bottom: 12px;">5 Rapana venosa araştırma merkezine aktarıldı. Karadeniz midyeleri korundu!</p>
+        <button onclick="location.reload()" class="primary-btn">YENİDEN OYNA</button>
+      </div>
+    </div>
+
+    <!-- Oyun Bitti Modalı -->
+    <div id="gameOverModal" class="modal" style="display: none;">
+      <div class="modal-box">
+        <h2 style="font-size: 22px; color: #ef4444; margin-bottom: 8px;">ZETA'nın Enerjisi Tükendi! ⚠️</h2>
+        <p style="font-size: 13px; margin-bottom: 12px;">İstilacılara doğrudan temas etmek enerjinizi bitirdi. Yosun toplayıp uzaktan ağ fırlatın.</p>
+        <button onclick="location.reload()" class="primary-btn">TEKRAR DENE</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SES SENTEZLEYİCİSİ (Web Audio API) ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function playBeep(freq, duration, type='sine') {
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    // --- OYUN DEĞİŞKENLERİ ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = 0, height = 0;
+    const worldWidth = 1400, worldHeight = 600;
+
+    let score = 0;
+    let power = 100;
+    const maxPower = 200;
+    const captureThreshold = 100;
+    let captured = 0;
+    const targetCount = 5;
+    let netCooldown = 0;
+    const maxNetCooldown = 60;
+    let isPlaying = false;
+
+    const player = {
+      x: 120, y: 260, vx: 0, vy: 0, size: 28, facingRight: true, invulnerable: 0
+    };
+
+    const invasives = [];
+    for (let i = 0; i < targetCount; i++) {
+      invasives.push({
+        x: 350 + i * 200 + Math.random() * 50,
+        y: worldHeight - 100 - (i % 2) * 40,
+        vx: (Math.random() - 0.5) * 1.2,
+        vy: 0,
+        size: 26,
+        power: 100,
+        active: true
+      });
+    }
+
+    const seaweeds = [];
+    for (let i = 0; i < 9; i++) {
+      seaweeds.push({
+        x: 150 + i * 140 + Math.random() * 30,
+        y: worldHeight - 65,
+        size: 20,
+        height: 55 + Math.random() * 30,
+        active: true
+      });
+    }
+
+    const bonusFish = {
+      x: 400, y: 220, vx: 1.5, size: 20, active: true
+    };
+
+    const nets = [];
+    const particles = [];
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      width = rect.width;
+      height = rect.height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let inputVector = { x: 0, y: 0 };
+    const keys = {};
+
+    window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.code === 'Space') fireNet();
+      if (e.key.toLowerCase() === 'e') collectSeaweed();
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    // Touch Joystick
+    const joyZone = document.getElementById('joystickZone');
+    const joyKnob = document.getElementById('joystickKnob');
+    let touchId = null;
+
+    joyZone.addEventListener('touchstart', (e) => {
+      const t = e.changedTouches[0];
+      touchId = t.identifier;
+      updateJoystick(t);
+    });
+    window.addEventListener('touchmove', (e) => {
+      if (touchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchId) {
+          updateJoystick(e.changedTouches[i]);
+          break;
+        }
+      }
+    });
+    window.addEventListener('touchend', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchId) {
+          touchId = null;
+          inputVector = { x: 0, y: 0 };
+          joyKnob.style.transform = 'translate(0px, 0px)';
+          break;
+        }
+      }
+    });
+
+    function updateJoystick(t) {
+      const rect = joyZone.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      let dx = t.clientX - cx;
+      let dy = t.clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      const maxR = 40;
+      if (dist > maxR) {
+        dx = (dx / dist) * maxR;
+        dy = (dy / dist) * maxR;
+      }
+      joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+      inputVector = { x: dx / maxR, y: dy / maxR };
+    }
+
+    // Modal UI events
+    document.getElementById('btnStartBriefing').addEventListener('click', () => {
+      document.getElementById('briefingModal').style.display = 'none';
+      isPlaying = true;
+      playBeep(520, 0.2);
+    });
+
+    document.getElementById('btnOpenRulesFromBriefing').addEventListener('click', () => {
+      document.getElementById('rulesModal').style.display = 'flex';
+      playBeep(440, 0.08);
+    });
+
+    document.getElementById('btnHowToPlay').addEventListener('click', () => {
+      document.getElementById('rulesModal').style.display = 'flex';
+      playBeep(440, 0.08);
+    });
+
+    document.getElementById('btnCloseRules').addEventListener('click', () => {
+      document.getElementById('rulesModal').style.display = 'none';
+      playBeep(400, 0.08);
+    });
+
+    document.getElementById('btnNet').addEventListener('click', fireNet);
+    document.getElementById('btnCollect').addEventListener('click', collectSeaweed);
+
+    function fireNet() {
+      if (!isPlaying || netCooldown > 0) return;
+      netCooldown = maxNetCooldown;
+      playBeep(700, 0.18, 'triangle');
+      const dir = player.facingRight ? 1 : -1;
+      nets.push({
+        x: player.x + dir * 30,
+        y: player.y,
+        vx: dir * 7.5,
+        radius: 16,
+        life: 0,
+        maxLife: 45,
+        active: true
+      });
+    }
+
+    function collectSeaweed() {
+      for (const sw of seaweeds) {
+        if (!sw.active) continue;
+        const d = Math.hypot(player.x - sw.x, player.y - sw.y);
+        if (d < player.size + sw.size + 20) {
+          sw.active = false;
+          power = Math.min(maxPower, power + 25);
+          score += 10;
+          if (netCooldown > 0) netCooldown = Math.max(0, netCooldown - 3);
+          playBeep(520, 0.12);
+          particles.push({ x: sw.x, y: sw.y - 20, text: '+25 Güç (+10 Puan)', color: '#34d399', life: 0 });
+        }
+      }
+    }
+
+    // --- GAME LOOP ---
+    let lastTime = performance.now();
+    function loop(time) {
+      const dt = Math.min((time - lastTime) / 1000, 0.05);
+      lastTime = time;
+
+      if (isPlaying) {
+        if (netCooldown > 0) {
+          netCooldown = Math.max(0, netCooldown - dt);
+          document.getElementById('netTimerText').innerText = Math.ceil(netCooldown) + 's';
+        } else {
+          document.getElementById('netTimerText').innerText = 'HAZIR';
+        }
+
+        let kx = 0, ky = 0;
+        if (keys['arrowleft'] || keys['a']) kx -= 1;
+        if (keys['arrowright'] || keys['d']) kx += 1;
+        if (keys['arrowup'] || keys['w']) ky -= 1;
+        if (keys['arrowdown'] || keys['s']) ky += 1;
+        if (kx !== 0 || ky !== 0) inputVector = { x: kx, y: ky };
+
+        player.vx = inputVector.x * 220;
+        player.vy = inputVector.y * 220;
+        if (inputVector.x > 0.1) player.facingRight = true;
+        if (inputVector.x < -0.1) player.facingRight = false;
+
+        player.x = Math.max(player.size, Math.min(worldWidth - player.size, player.x + player.vx * dt));
+        player.y = Math.max(40, Math.min(worldHeight - 50, player.y + player.vy * dt));
+
+        if (player.invulnerable > 0) player.invulnerable -= dt;
+
+        collectSeaweed();
+
+        // Invasives logic (Stalk if stronger, flee if weaker)
+        for (const inv of invasives) {
+          if (!inv.active) continue;
+          const dx = player.x - inv.x;
+          const dy = player.y - inv.y;
+          const dist = Math.hypot(dx, dy);
+
+          const stronger = inv.power > power;
+          if (dist < 300) {
+            const dir = stronger ? 1 : -1;
+            inv.vx += (dir * (dx / dist) * 70 - inv.vx) * 0.03;
+          }
+          inv.x = Math.max(40, Math.min(worldWidth - 40, inv.x + inv.vx * dt * 60));
+
+          if (player.invulnerable <= 0 && dist < player.size + inv.size) {
+            power = Math.max(0, power - 50);
+            player.invulnerable = 1.5;
+            playBeep(140, 0.25, 'sawtooth');
+            particles.push({ x: player.x, y: player.y - 25, text: '-50 Temas Hasarı!', color: '#ef4444', life: 0 });
+            if (power <= 0) {
+              isPlaying = false;
+              document.getElementById('gameOverModal').style.display = 'flex';
+            }
+          }
+        }
+
+        // Bonus Fish (Barbun)
+        if (bonusFish.active) {
+          bonusFish.x += bonusFish.vx;
+          if (bonusFish.x < 100 || bonusFish.x > worldWidth - 100) bonusFish.vx *= -1;
+          const bd = Math.hypot(player.x - bonusFish.x, player.y - bonusFish.y);
+          if (bd < player.size + bonusFish.size) {
+            bonusFish.active = false;
+            score += 50;
+            playBeep(880, 0.15);
+            particles.push({ x: bonusFish.x, y: bonusFish.y - 20, text: '+50 Barbun Korundu!', color: '#f59e0b', life: 0 });
+          }
+        }
+
+        // Net Projectiles
+        for (let i = nets.length - 1; i >= 0; i--) {
+          const n = nets[i];
+          n.x += n.vx;
+          n.life++;
+          n.radius = Math.min(48, n.radius + 0.8);
+
+          let hit = false;
+          for (const inv of invasives) {
+            if (!inv.active) continue;
+            const d = Math.hypot(n.x - inv.x, n.y - inv.y);
+            if (d < n.radius + inv.size) {
+              hit = true;
+              n.active = false;
+              if (power >= captureThreshold) {
+                inv.active = false;
+                captured++;
+                score += 100;
+                playBeep(880, 0.25);
+                particles.push({ x: inv.x, y: inv.y - 25, text: '+100 Yakalandı!', color: '#38bdf8', life: 0 });
+                if (captured >= targetCount) {
+                  score += 200;
+                  isPlaying = false;
+                  document.getElementById('winModal').style.display = 'flex';
+                }
+              } else {
+                particles.push({ x: inv.x, y: inv.y - 25, text: 'Yetersiz Güç (En az 100⚡)', color: '#fbbf24', life: 0 });
+              }
+              break;
+            }
+          }
+
+          if (!hit && n.life >= n.maxLife) {
+            n.active = false;
+            score = Math.max(0, score - 10);
+            particles.push({ x: n.x, y: n.y, text: '-10 Boşa Ağ', color: '#94a3b8', life: 0 });
+          }
+
+          if (!n.active) nets.splice(i, 1);
+        }
+
+        document.getElementById('hudPower').innerText = `${power}/${maxPower}`;
+        document.getElementById('hudTarget').innerText = `${captured}/${targetCount}`;
+        document.getElementById('hudScore').innerText = score;
+      }
+
+      // --- TEMİZ ŞEFFAF RENDER ---
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const camX = Math.max(0, Math.min(worldWidth - width, player.x - width / 2));
+      const camY = Math.max(0, Math.min(worldHeight - height, player.y - height / 2));
+
+      ctx.save();
+      ctx.translate(-camX, -camY);
+
+      // Su Altı Arka Planı
+      const grad = ctx.createLinearGradient(0, 0, 0, worldHeight);
+      grad.addColorStop(0, '#0c4a6e');
+      grad.addColorStop(1, '#021626');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, worldWidth, worldHeight);
+
+      // Deniz Tabanı
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, worldHeight - 55, worldWidth, 55);
+
+      // Şeffaf Yosunlar
+      for (const sw of seaweeds) {
+        if (!sw.active) continue;
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(sw.x, sw.y);
+        ctx.lineTo(sw.x, sw.y - sw.height);
+        ctx.stroke();
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y - sw.height, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Şeffaf Barbun
+      if (bonusFish.active) {
+        ctx.save();
+        ctx.translate(bonusFish.x, bonusFish.y);
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, bonusFish.size, bonusFish.size * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillText('+50 Barbun', -20, -14);
+        ctx.restore();
+      }
+
+      // Şeffaf Rapana venosa Salyangoz Çizimi (Kutulu arka plan YOK)
+      for (const inv of invasives) {
+        if (!inv.active) continue;
+        ctx.save();
+        ctx.translate(inv.x, inv.y);
+
+        // Kaslı ayak
+        ctx.fillStyle = '#78716c';
+        ctx.beginPath();
+        ctx.ellipse(inv.size * 0.25, inv.size * 0.4, inv.size * 0.5, inv.size * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Spiral Turuncu Kabuk
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, inv.size * 0.9, inv.size * 0.65, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#7c2d12';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillText('Rapana (100⚡)', -24, -inv.size - 4);
+        ctx.restore();
+      }
+
+      // Şeffaf Ağ
+      for (const n of nets) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Şeffaf ZETA Robot
+      ctx.save();
+      ctx.translate(player.x, player.y);
+      if (player.invulnerable > 0 && Math.floor(time * 0.02) % 2 === 0) ctx.globalAlpha = 0.4;
+      const facing = player.facingRight ? 1 : -1;
+      ctx.scale(facing, 1);
+
+      // Beyaz Gövde
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, player.size, player.size * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Mavi Şerit
+      ctx.fillStyle = '#0ea5e9';
+      ctx.fillRect(-player.size * 0.2, -player.size * 0.65, player.size * 0.35, player.size * 1.3);
+
+      // Kavisli Vizör
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.ellipse(player.size * 0.35, 0, player.size * 0.5, player.size * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(player.size * 0.35, -2, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Floating text particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.life += dt;
+        pt.y -= 0.6;
+        ctx.fillStyle = pt.color;
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(pt.text, pt.x, pt.y);
+        if (pt.life > 1.2) particles.splice(i, 1);
+      }
+
+      ctx.restore();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

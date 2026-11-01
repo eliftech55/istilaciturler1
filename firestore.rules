@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. Kullanıcı Profili Kuralları (/users/{userId})
+    match /users/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isValidId(userId));
+      allow list: if isSignedIn();
+
+      allow create: if isOwner(userId) 
+        && isValidId(userId)
+        && incoming().uid == userId
+        && incoming().displayName is string
+        && incoming().displayName.size() <= 64
+        && incoming().highScore is number
+        && incoming().highScore >= 0
+        && incoming().levelsUnlocked is number
+        && incoming().levelsUnlocked >= 1
+        && incoming().totalInvasivesCaptured is number;
+
+      allow update: if isOwner(userId)
+        && incoming().uid == userId
+        && incoming().displayName is string
+        && incoming().displayName.size() <= 64
+        && incoming().highScore is number
+        && incoming().highScore >= 0
+        && incoming().levelsUnlocked is number
+        && incoming().totalInvasivesCaptured is number;
+
+      allow delete: if isOwner(userId);
+
+      // Oyun Seviye Kayıtları Alt Koleksiyonu
+      match /game_records/{recordId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) 
+          && incoming().userId == userId
+          && incoming().score is number
+          && incoming().levelNumber is number;
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // 2. Genel Liderlik Tablosu Kuralları (/leaderboard/{entryId})
+    match /leaderboard/{entryId} {
+      // Herkes liderlik tablosunu okuyabilir
+      allow get, list: if true;
+
+      // Sadece kendi kullanıcı kaydını oluşturan veya güncelleyen oyuncular yazabilir
+      allow create, update: if isSignedIn() 
+        && isValidId(entryId)
+        && (request.auth.uid == entryId || request.auth.uid == incoming().userId)
+        && incoming().score is number
+        && incoming().score >= 0
+        && incoming().displayName is string
+        && incoming().displayName.size() <= 64
+        && incoming().levelReached is number;
+
+      allow delete: if isSignedIn() && (request.auth.uid == entryId || resource.data.userId == request.auth.uid);
+    }
+  }
+}

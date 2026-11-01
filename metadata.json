@@ -1,0 +1,6 @@
+{
+  "name": "Karadeniz'in Koruyucuları – ZETA: İstilacı Tür Avcısı",
+  "description": "Karadeniz ekosistemini koruyan sevimli robot ZETA ile istilacı yabancı türleri keşfedip yakaladığınız 2D eğitsel macera oyunu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
