@@ -1,24 +1,51 @@
 import React, { useState } from 'react';
 import { TUTORIAL_QUIZ } from '../data/gameData';
-import { ShieldCheck, Play, ArrowRight, HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, Play, ArrowRight, HelpCircle, CheckCircle2, XCircle, UserCheck, Sparkles } from 'lucide-react';
 import { soundEffects } from '../utils/audio';
 
 interface IntroStoryModalProps {
   onStartGame: () => void;
   onShowHowToPlay?: () => void;
+  onRegisterUser: (username: string) => Promise<void>;
+  initialUsername?: string;
 }
 
 export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({ 
   onStartGame, 
-  onShowHowToPlay 
+  onShowHowToPlay,
+  onRegisterUser,
+  initialUsername = ''
 }) => {
-  const [step, setStep] = useState<'story' | 'levels' | 'quiz' | 'ready'>('story');
+  const [username, setUsername] = useState(
+    initialUsername || (typeof window !== 'undefined' ? localStorage.getItem('zeta_player_name') || '' : '')
+  );
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [step, setStep] = useState<'register' | 'story' | 'levels' | 'quiz' | 'ready'>('register');
   const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
 
   const currentQ = TUTORIAL_QUIZ[currentQuizIdx];
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = username.trim() || `Koruyucu-${Math.floor(1000 + Math.random() * 9000)}`;
+    setIsRegistering(true);
+    soundEffects.playClick();
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('zeta_player_name', cleanName);
+      }
+      await onRegisterUser(cleanName);
+      setStep('story');
+    } catch (err) {
+      console.error(err);
+      setStep('story');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   const handleSelectOption = (idx: number) => {
     if (quizAnswered) return;
@@ -34,6 +61,7 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
   };
 
   const handleNextQuiz = () => {
+    soundEffects.playClick();
     if (currentQuizIdx < TUTORIAL_QUIZ.length - 1) {
       setCurrentQuizIdx((prev) => prev + 1);
       setSelectedOption(null);
@@ -47,10 +75,10 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-6 text-slate-100 flex flex-col my-auto max-h-[92vh] overflow-y-auto">
         
-        {/* Step 1: ZETA Tanıtımı ve Karadeniz Sorunu */}
-        {step === 'story' && (
-          <div className="flex flex-col items-center text-center space-y-4">
-            <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-cyan-400 shadow-lg shadow-cyan-500/20 bg-slate-950 flex items-center justify-center">
+        {/* Step 0: Kullanıcı Adı Belirleme ve Veritabanı Kaydı */}
+        {step === 'register' && (
+          <form onSubmit={handleRegisterSubmit} className="flex flex-col items-center text-center space-y-4">
+            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-cyan-400 shadow-lg shadow-cyan-500/20 bg-slate-950 flex items-center justify-center">
               <img
                 src="/src/assets/images/zeta_submarine_robot_1793561924213.jpg"
                 alt="ZETA Robot Drone"
@@ -64,12 +92,75 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
                 Karadeniz Araştırma Enstitüsü
               </div>
               <h2 className="text-2xl font-extrabold text-white">
-                Merhaba! Ben ZETA 🤖
+                Oyuncu Kaydı
+              </h2>
+              <p className="text-xs text-slate-400">
+                Liderlik tablosunda yer almak ve ilerlemeni kaydetmek için kullanıcı adını belirle.
+              </p>
+            </div>
+
+            <div className="w-full space-y-2 text-left">
+              <label className="text-xs font-semibold text-slate-300 block">
+                Kullanıcı Adınız (Takma Ad):
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Örn: DenizAvcısı, KaptanEmre..."
+                maxLength={16}
+                required
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
+              />
+              <span className="text-[10px] text-slate-400 block text-right font-mono">
+                {username.length}/16 Karakter
+              </span>
+            </div>
+
+            <div className="w-full bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-left text-xs text-slate-300 space-y-1">
+              <div className="font-semibold text-cyan-300 flex items-center gap-1.5 text-xs">
+                <Sparkles size={14} className="text-cyan-400" />
+                Firebase Cloud Firestore Entegrasyonu
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Skorun, yakaladığın istilacı türler ve seviye ilerlemen bu isimle bulut veritabanına kaydedilecektir.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isRegistering}
+              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 font-extrabold text-white shadow-xl shadow-cyan-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all text-sm tracking-wide"
+            >
+              <UserCheck size={18} />
+              <span>{isRegistering ? 'Kaydediliyor...' : 'Veritabanına Kaydol ve Başla'}</span>
+            </button>
+          </form>
+        )}
+
+        {/* Step 1: ZETA Tanıtımı ve Karadeniz Sorunu */}
+        {step === 'story' && (
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-cyan-400 shadow-lg shadow-cyan-500/20 bg-slate-950 flex items-center justify-center">
+              <img
+                src="/src/assets/images/zeta_submarine_robot_1793561924213.jpg"
+                alt="ZETA Robot Drone"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-xs uppercase tracking-wider font-semibold text-cyan-400">
+                Hoş Geldin, <span className="text-white font-bold">{username || 'Koruyucu'}</span>!
+              </div>
+              <h2 className="text-2xl font-extrabold text-white">
+                Ben ZETA 🤖
               </h2>
             </div>
 
             <p className="text-sm text-slate-300 leading-relaxed max-w-lg text-left">
-              Karadeniz'in hassas ekosistemini korumak için tasarlanmış sevimli araştırma robotuyum. 
+              Karadeniz'in hassas ekosistemini korumak için tasarlanmış araştırma robotuyum. 
               Uluslararası ticaret yapan dev kargo gemileri, dengede kalmak için aldıkları <span className="text-cyan-300 font-semibold">balast sularını</span> Karadeniz'e boşalttığında, okyanuslardan gelen yabancı canlılar denizimize yayılıyor.
             </p>
 
@@ -86,6 +177,7 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
             <div className="w-full flex flex-col sm:flex-row gap-2">
               {onShowHowToPlay && (
                 <button
+                  type="button"
                   onClick={() => {
                     soundEffects.playClick();
                     onShowHowToPlay();
@@ -97,6 +189,7 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
                 </button>
               )}
               <button
+                type="button"
                 onClick={() => {
                   soundEffects.playClick();
                   setStep('levels');
@@ -179,13 +272,21 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
 
             <div className="flex gap-2">
               <button
-                onClick={() => setStep('story')}
+                type="button"
+                onClick={() => {
+                  soundEffects.playClick();
+                  setStep('story');
+                }}
                 className="w-1/3 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs text-slate-300 font-semibold"
               >
                 Geri
               </button>
               <button
-                onClick={() => setStep('quiz')}
+                type="button"
+                onClick={() => {
+                  soundEffects.playClick();
+                  setStep('quiz');
+                }}
                 className="w-2/3 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 font-bold text-white text-xs shadow-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
               >
                 <span>3 Soruluk Eğitime Başla</span>
@@ -223,6 +324,7 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
                 return (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => handleSelectOption(i)}
                     disabled={quizAnswered}
                     className={`w-full text-left p-3 rounded-xl border text-xs font-medium transition-all flex items-start gap-2.5 ${btnStyle}`}
@@ -251,6 +353,7 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
 
             {quizAnswered && (
               <button
+                type="button"
                 onClick={handleNextQuiz}
                 className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-bold text-white text-xs shadow-lg flex items-center justify-center gap-1.5 active:scale-95 transition-all"
               >
@@ -270,15 +373,15 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
 
             <div className="space-y-1">
               <h2 className="text-2xl font-extrabold text-white">
-                Eğitim Tamamlandı!
+                Tebrikler {username || 'Koruyucu'}!
               </h2>
               <p className="text-xs text-emerald-300">
-                Eğitim Testi: {quizScore} / {TUTORIAL_QUIZ.length} Doğru
+                Eğitim Testi: {quizScore} / {TUTORIAL_QUIZ.length} Doğru · Veritabanı Kaydı Hazır
               </p>
             </div>
 
             <p className="text-xs text-slate-300 max-w-md leading-relaxed">
-              Artık Karadeniz'i korumak için hazırsın! Yosun toplayarak enerjini 100 seviyesine çıkar, Rapana venosa salyangozlarını güvenli ağınla yakala.
+              Artık Karadeniz'i korumak için tam yetkilisin! Yosun toplayarak enerjini doldur, Rapana venosa salyangozlarını güvenli ağınla yakala.
             </p>
 
             <div className="w-full bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-left text-xs text-slate-400 space-y-1 font-mono">
@@ -287,6 +390,7 @@ export const IntroStoryModal: React.FC<IntroStoryModalProps> = ({
             </div>
 
             <button
+              type="button"
               onClick={onStartGame}
               className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-extrabold text-white shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all text-sm tracking-wide"
             >

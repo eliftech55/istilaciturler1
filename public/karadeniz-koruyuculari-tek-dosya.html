@@ -175,6 +175,7 @@
   <header>
     <div style="color: #38bdf8; font-weight: 800;">ZETA: Karadeniz</div>
     <div style="display: flex; gap: 6px; align-items: center;">
+      <div id="hudPilot" class="hud-badge" style="display:none; color:#38bdf8; font-size:10px;">Pilot: <span id="pilotNameTxt"></span></div>
       <div class="hud-badge">⚡ <span id="hudPower" style="color:#38bdf8;">100/200</span></div>
       <div class="hud-badge">🎯 <span id="hudTarget" style="color:#f59e0b;">0/5</span></div>
       <div class="hud-badge">🏆 <span id="hudScore" style="color:#34d399;">0</span></div>
@@ -196,8 +197,25 @@
       </div>
     </div>
 
+    <!-- 0. Oyuncu Kaydı Modalı (Kullanıcı Adı İsteği) -->
+    <div id="registerModal" class="modal">
+      <div class="modal-box">
+        <div style="font-size: 11px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">Karadeniz Araştırma Enstitüsü</div>
+        <h2 style="font-size: 20px; color: white; margin: 4px 0 2px;">Oyuncu Kaydı</h2>
+        <p style="font-size: 11px; color: #94a3b8; margin-bottom: 14px;">ZETA araştırma görevine başlamadan önce kullanıcı adını belirle.</p>
+
+        <div style="background: rgba(2, 6, 23, 0.7); border: 1px solid #1e293b; border-radius: 12px; padding: 14px; text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #38bdf8; font-weight: bold; display: block; margin-bottom: 6px;">Kullanıcı Adı / Pilot Çağrı Kodu</label>
+          <input type="text" id="inputPlayerName" maxlength="15" placeholder="Örn: Denizci_Zeta" style="width: 100%; padding: 10px; background: #020617; border: 1px solid #0284c7; border-radius: 8px; color: white; font-weight: bold; font-size: 13px; box-sizing: border-box;" />
+          <div style="font-size: 10px; color: #64748b; margin-top: 4px;">En fazla 15 karakter. Skor tablosunda ve kayıtlarda görüntülenecektir.</div>
+        </div>
+
+        <button id="btnSavePlayerName" class="primary-btn">KAYDET VE GÖREVE GEÇ</button>
+      </div>
+    </div>
+
     <!-- 1. Seviye Brifingi Modalı -->
-    <div id="briefingModal" class="modal">
+    <div id="briefingModal" class="modal" style="display: none;">
       <div class="modal-box">
         <div style="font-size: 11px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">1. Seviye Görev Brifingi</div>
         <h2 style="font-size: 20px; color: white; margin: 4px 0 2px;">Rapana venosa (Deniz Salyangozu)</h2>
@@ -409,6 +427,25 @@
       joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
       inputVector = { x: dx / maxR, y: dy / maxR };
     }
+
+    // Oyuncu Kaydı Kontrolü ve Başlangıç
+    let storedName = localStorage.getItem('zeta_player_name');
+    if (storedName) {
+      document.getElementById('inputPlayerName').value = storedName;
+    }
+
+    document.getElementById('btnSavePlayerName').addEventListener('click', () => {
+      let val = document.getElementById('inputPlayerName').value.trim();
+      if (!val) {
+        val = 'Koruyucu-' + Math.floor(1000 + Math.random() * 9000);
+      }
+      localStorage.setItem('zeta_player_name', val);
+      document.getElementById('pilotNameTxt').textContent = val;
+      document.getElementById('hudPilot').style.display = 'block';
+      document.getElementById('registerModal').style.display = 'none';
+      document.getElementById('briefingModal').style.display = 'flex';
+      playBeep(660, 0.15);
+    });
 
     // Modal UI events
     document.getElementById('btnStartBriefing').addEventListener('click', () => {

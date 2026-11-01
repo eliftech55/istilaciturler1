@@ -16,7 +16,7 @@ import { SingleFileExportModal } from './components/SingleFileExportModal';
 import { LeaderboardModal } from './components/LeaderboardModal';
 import { GitHubExportModal } from './components/GitHubExportModal';
 import { soundEffects } from './utils/audio';
-import { auth, recordScoreAndProgress, loginAsGuest } from './services/firebase';
+import { auth, recordScoreAndProgress, loginAsGuest, updateUsername } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { 
   Shield, 
@@ -151,6 +151,18 @@ export default function App() {
     setNetMaxCooldownSec(maxSec);
   }, []);
 
+  const handleRegisterUser = useCallback(async (chosenName: string) => {
+    try {
+      if (currentUser) {
+        await updateUsername(currentUser, chosenName);
+      } else {
+        await loginAsGuest(chosenName);
+      }
+    } catch (e) {
+      console.error('Kullanıcı kayıt hatası:', e);
+    }
+  }, [currentUser]);
+
   const handleLevelComplete = useCallback(async () => {
     setFirestoreSaved(false);
     let u = currentUser;
@@ -279,6 +291,14 @@ export default function App() {
             <span className="font-bold text-emerald-300">{score}</span>
           </div>
 
+          {/* Oyuncu Kullanıcı Adı */}
+          {currentUser?.displayName && (
+            <div className="hidden lg:flex items-center gap-1.5 bg-slate-950/70 border border-cyan-800/50 px-2.5 py-1 rounded-xl text-xs">
+              <span className="text-slate-400 text-[10px]">Pilot:</span>
+              <span className="font-bold text-cyan-300 truncate max-w-[100px]">{currentUser.displayName}</span>
+            </div>
+          )}
+
           {/* Yardımcı Butonlar */}
           <div className="flex items-center gap-1">
             
@@ -400,11 +420,13 @@ export default function App() {
 
       {/* --- MODALLER --- */}
 
-      {/* 1. Açılış Hikayesi & 3 Soruluk Eğitim */}
+      {/* 1. Açılış Hikayesi & 3 Soruluk Eğitim & Başlangıç Kaydı */}
       {gameState === 'INTRO_STORY' && (
         <IntroStoryModal
           onStartGame={() => setGameState('LEVEL_BRIEFING')}
           onShowHowToPlay={() => setShowHowToPlay(true)}
+          onRegisterUser={handleRegisterUser}
+          initialUsername={currentUser?.displayName || ''}
         />
       )}
 

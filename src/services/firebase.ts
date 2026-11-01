@@ -6,6 +6,7 @@ import {
   signInAnonymously, 
   signOut,
   onAuthStateChanged,
+  updateProfile,
   User 
 } from 'firebase/auth';
 import { 
@@ -97,6 +98,10 @@ export async function loginAsGuest(guestName?: string) {
     const cred = await signInAnonymously(auth);
     const displayName = guestName || `Koruyucu-${Math.floor(1000 + Math.random() * 9000)}`;
     
+    try {
+      await updateProfile(cred.user, { displayName });
+    } catch {}
+
     // Create guest profile in Firestore
     const userRef = doc(db, 'users', cred.user.uid);
     await setDoc(userRef, {
@@ -114,6 +119,25 @@ export async function loginAsGuest(guestName?: string) {
     return cred.user;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, 'users');
+  }
+}
+
+export async function updateUsername(user: User, newName: string) {
+  try {
+    await updateProfile(user, { displayName: newName });
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+      displayName: newName,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    const leaderboardRef = doc(db, 'leaderboard', user.uid);
+    await setDoc(leaderboardRef, {
+      displayName: newName,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
   }
 }
 
